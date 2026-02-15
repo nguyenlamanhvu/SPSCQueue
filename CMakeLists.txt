@@ -1,22 +1,33 @@
-cmake_minimum_required(VERSION 3.10)
-
-project(SPSCQueue LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
- 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -Wall -Wextra")
-
-find_package(Threads REQUIRED)
-
-include_directories(include)
-
-add_executable(spsc_benchmark 
-    src/SPSCQueueBenchmark.cpp
+cmake_minimum_required(VERSION 3.14)
+project(SPSCQueue 
+    VERSION 1.0.0 
+    DESCRIPTION "High-performance lock-free SPSC queue"
+    LANGUAGES CXX
 )
 
-target_link_libraries(spsc_benchmark PRIVATE Threads::Threads)
+add_library(spsc_queue INTERFACE)
+add_library(SPSCQueue::spsc_queue ALIAS spsc_queue)
 
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
+target_include_directories(spsc_queue INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_compile_features(spsc_queue INTERFACE cxx_std_17)
+
+option(SPSC_BUILD_BENCHMARK "Build the benchmark" ON)
+
+if(SPSC_BUILD_BENCHMARK)
+    add_executable(spsc_benchmark benchmarks/main.cpp)
+    target_link_libraries(spsc_benchmark PRIVATE spsc_queue pthread)
+    
+    target_compile_options(spsc_benchmark PRIVATE -O3 -march=native)
+    
+    set_target_properties(spsc_benchmark PROPERTIES
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED ON
+    )
+endif()
+
+install(TARGETS spsc_queue EXPORT SPSCQueueTargets)
+install(DIRECTORY include/SPSCQueue DESTINATION include)
