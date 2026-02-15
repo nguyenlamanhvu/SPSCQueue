@@ -15,13 +15,20 @@ target_include_directories(spsc_queue INTERFACE
 
 target_compile_features(spsc_queue INTERFACE cxx_std_17)
 
+find_package(Boost COMPONENTS system)
+
 option(SPSC_BUILD_BENCHMARK "Build the benchmark" ON)
 
 if(SPSC_BUILD_BENCHMARK)
     add_executable(spsc_benchmark benchmarks/main.cpp)
     target_link_libraries(spsc_benchmark PRIVATE spsc_queue pthread)
-    
     target_compile_options(spsc_benchmark PRIVATE -O3 -march=native)
+
+    if(Boost_FOUND)
+        target_compile_definitions(spsc_benchmark PRIVATE HAS_BOOST)
+        target_link_libraries(spsc_benchmark PRIVATE Boost::system)
+        message(STATUS "Boost found - Comparison enabled")
+    endif()
     
     set_target_properties(spsc_benchmark PROPERTIES
         CXX_STANDARD 17
